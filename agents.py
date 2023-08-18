@@ -52,10 +52,11 @@ class UDRLNeuralProcessAgent(Agent):
         self.emb = emb[None, :]
 
     def act(self, obs):
-        logits = self.model(self.emb, torch.tensor(obs)[None, :].type(torch.float32))
-        distrn = torch.distributions.categorical.Categorical(logits=logits)
-        action = distrn.sample()[0]
-        action = action.detach().numpy()
+        action = self.model(self.emb, torch.tensor(obs)[None, :].type(torch.float32))
+        if self.model.discrete:
+            distrn = torch.distributions.categorical.Categorical(logits=action)
+            action = distrn.sample()
+        action = action[0].detach().numpy()
         if self.training:
             self.last_obs = obs
             self.last_action = action

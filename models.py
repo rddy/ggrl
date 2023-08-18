@@ -34,8 +34,10 @@ class UDRLNeuralProcess(Module):
         n_emb_dims,
         emb_layer_kwargs,
         pred_layer_kwargs,
+        discrete=True,
     ):
         super().__init__(path)
+        self.discrete = discrete
         self.n_act_dims = n_act_dims
         self.emb_layer = networks.build_mlp(
             n_in_dims=n_obs_dims + 1 + n_act_dims,
@@ -49,9 +51,12 @@ class UDRLNeuralProcess(Module):
         )
 
     def _embed(self, obses, rtns, acts):
-        ohe_acts = F.one_hot(acts.long(), num_classes=self.n_act_dims)
-        ohe_acts = ohe_acts.type(torch.float32)
-        cat = torch.cat([obses, rtns[:, None], ohe_acts], dim=1)
+        if self.discrete:
+            act_feats = F.one_hot(acts.long(), num_classes=self.n_act_dims)
+            act_feats = act_feats.type(torch.float32)
+        else:
+            act_feats = acts
+        cat = torch.cat([obses, rtns[:, None], act_feats], dim=1)
         return self.emb_layer(cat)
 
     def embed(self, *args):

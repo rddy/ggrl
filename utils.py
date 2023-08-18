@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import gymnasium as gym
 
 
 DATA_DIR = "data"
@@ -40,3 +41,10 @@ def set_random_seed(seed):
 
 def smooth(xs, win):
     return np.convolve(xs, np.ones(win) / win)
+
+
+def get_env_dims(env):
+    n_obs_dims = env.observation_space.low.size
+    discrete = type(env.action_space) == gym.spaces.Discrete
+    n_act_dims = env.action_space.n if discrete else env.action_space.low.size
+    return n_obs_dims, n_act_dims, discrete

@@ -67,4 +67,8 @@ class UDRLNeuralProcessOptimizer(Optimizer):
         actions = actions[idxes]
         embs = self.model.batch_embed(obses[:-1], returns[:-1], actions[:-1])
         preds = self.model(embs, obses[1:])
-        return F.cross_entropy(preds, actions[1:])
+        targets = actions[1:]
+        if self.model.discrete:
+            return F.cross_entropy(preds, targets)
+        else:
+            return torch.mean((preds - targets) ** 2)
