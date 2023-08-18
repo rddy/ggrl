@@ -75,6 +75,7 @@ class UDRLNeuralProcessAgent(Agent):
                 self.dataset.put(self.traj)
                 if len(self.dataset.trajs) % self.train_freq == 0:
                     self.model.reset()
+                    self.dataset.split()
                     self.optimizer.train(**self.train_kwargs)
                     self.embed()
             self.traj = []

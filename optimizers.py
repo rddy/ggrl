@@ -3,6 +3,7 @@ import abc
 import numpy as np
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 
 
 class Optimizer(object):
@@ -12,10 +13,6 @@ class Optimizer(object):
         self.device = device
         self.batch_size = batch_size
         self.optimizer = torch.optim.Adam(self.model.parameters(), **opt_kwargs)
-        self.train_dataloader = torch.utils.data.DataLoader(
-            self.dataset.train, batch_size
-        )
-        self.val_dataloader = torch.utils.data.DataLoader(self.dataset.val, batch_size)
 
     @abc.abstractmethod
     def compute_loss(self, batch):
@@ -23,7 +20,8 @@ class Optimizer(object):
 
     def compute_val_loss(self):
         val_losses = []
-        for batch in self.val_dataloader:
+        val_dataloader = DataLoader(self.dataset.val, self.batch_size)
+        for batch in val_dataloader:
             batch = self.format_batch(batch)
             loss = self.compute_loss(batch)
             val_losses.append(loss.detach().numpy())
@@ -34,9 +32,10 @@ class Optimizer(object):
 
     def train(self, n_epochs, verbose=False):
         self.model.train()
+        train_dataloader = DataLoader(self.dataset.train, self.batch_size)
         for i in range(n_epochs):
             train_losses = []
-            for batch in self.train_dataloader:
+            for batch in train_dataloader:
                 batch = self.format_batch(batch)
                 self.optimizer.zero_grad()
                 loss = self.compute_loss(batch)
