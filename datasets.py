@@ -10,10 +10,8 @@ class ExpDataset(Dataset):
         self.trajs = []
         self.obses = []
         self.actions = []
-        self.rewards = []
         self.idxes_of_traj = []
         self.returns = []
-        self.max_return = -np.inf
         for traj in trajs:
             self.put(traj)
 
@@ -27,11 +25,9 @@ class ExpDataset(Dataset):
         n_new_obses = len(obses)
         self.idxes_of_traj.append((n_prev_obses, n_prev_obses + n_new_obses))
         self.returns.extend(returns)
-        self.rewards.extend(rewards)
         self.actions.extend(actions)
         self.obses.extend(obses)
         self.trajs.append(traj)
-        self.max_return = max(self.max_return, max_return)
 
     def __getitem__(self, idx):
         return self.obses[idx], self.actions[idx], self.returns[idx]
