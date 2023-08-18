@@ -6,15 +6,11 @@ import networks
 
 
 class Module(nn.Module):
-    def __init__(self, path):
-        super().__init__()
-        self.path = path
+    def save(self, path):
+        torch.save(self.state_dict(), path)
 
-    def save(self):
-        torch.save(self.state_dict(), self.path)
-
-    def load(self):
-        self.load_state_dict(torch.load(self.path))
+    def load(self, path):
+        self.load_state_dict(torch.load(path))
 
     def reset(self):
         def _reset(m):
@@ -28,15 +24,14 @@ class Module(nn.Module):
 class UDRLNeuralProcess(Module):
     def __init__(
         self,
-        path,
         n_obs_dims,
         n_act_dims,
         n_emb_dims,
+        discrete,
         emb_layer_kwargs,
         pred_layer_kwargs,
-        discrete=True,
     ):
-        super().__init__(path)
+        super().__init__()
         self.discrete = discrete
         self.n_act_dims = n_act_dims
         self.emb_layer = networks.build_mlp(
@@ -50,13 +45,11 @@ class UDRLNeuralProcess(Module):
             **pred_layer_kwargs
         )
 
-    def _embed(self, obses, rtns, acts):
+    def _embed(self, obses, returns, actions):
         if self.discrete:
-            act_feats = F.one_hot(acts.long(), num_classes=self.n_act_dims)
-            act_feats = act_feats.type(torch.float32)
-        else:
-            act_feats = acts
-        cat = torch.cat([obses, rtns[:, None], act_feats], dim=1)
+            actions = F.one_hot(actions.long(), num_classes=self.n_act_dims)
+            actions = actions.type(torch.float32)
+        cat = torch.cat([obses, returns[:, None], actions], dim=1)
         return self.emb_layer(cat)
 
     def embed(self, *args):

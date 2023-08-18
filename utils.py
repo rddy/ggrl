@@ -40,7 +40,7 @@ def set_random_seed(seed):
 
 
 def smooth(xs, win):
-    return np.convolve(xs, np.ones(win) / win)
+    return np.convolve(xs, np.ones(win), 'valid') / win
 
 
 def get_env_dims(env):
