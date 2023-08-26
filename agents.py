@@ -78,7 +78,8 @@ class UDRLNeuralProcessAgent(LearningAgent):
         self.emb = emb[None, :]
 
     def eval_policy(self, obs):
-        return self.model(self.emb, torch.tensor(obs)[None, :].type(torch.float32))
+        obs = torch.tensor(obs)[None, :].type(torch.float32)
+        return self.model(self.emb, obs)
 
     def reset(self):
         if self.training and len(self.traj) > 0:
@@ -105,7 +106,8 @@ class PVNAgent(LearningAgent):
         self.policy_optimizer.train(**self.policy_train_kwargs)
 
     def eval_policy(self, obs):
-        return self.policy(torch.tensor(obs)[None, :].type(torch.float32))
+        obs = torch.tensor(obs)[None, :].type(torch.float32)
+        return self.policy(obs)
 
     def reset(self):
         if self.training and len(self.traj) > 0:

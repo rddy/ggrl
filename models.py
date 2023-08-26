@@ -100,7 +100,7 @@ class PVN(Module):
         preds = self.pred_layer(embs)
         embs = embs[:, None, :]
         inner_batch_size = obses.shape[1]
-        embs = embs.repeat(1, inner_batch_size, 1)
+        embs = embs.expand(-1, inner_batch_size, -1)
         recon_inpts = torch.cat([embs, obses], dim=2)
         recons = self.recon_layer(recon_inpts)
         return preds, recons

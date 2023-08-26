@@ -50,9 +50,11 @@ class ExpDataset(Dataset):
         return self.num_exps
 
     def agg(self, traj_idxes):
-        return sum(
-            [list(range(*self.idxes_of_traj[traj_idx])) for traj_idx in traj_idxes], []
-        )
+        idxes = []
+        for traj_idx in traj_idxes:
+            exp_idxes = self.idxes_of_traj[traj_idx]
+            idxes.extend(range(*exp_idxes))
+        return idxes
 
     def num_split_groups(self):
         return self.num_trajs
@@ -92,7 +94,8 @@ class PolicyEvalDataset(ExpDataset):
     def put(self, trajs):
         n_prev_trajs = self.num_trajs
         n_new_trajs = len(trajs)
-        self.traj_idxes_of_policy.append((n_prev_trajs, n_prev_trajs + n_new_trajs))
+        traj_idxes = (n_prev_trajs, n_prev_trajs + n_new_trajs)
+        self.traj_idxes_of_policy.append(traj_idxes)
         for traj in trajs:
             self.put_traj(traj)
         self.data.append(trajs)
