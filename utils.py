@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import gymnasium as gym
 
 
@@ -24,7 +25,7 @@ def run_episode(env, agent, max_n_steps, render=False):
         action = agent.act(obs)
         next_obs, reward, terminated, truncated, info = env.step(action)
         agent.reward(reward)
-        log.append((obs, action, reward, next_obs, reward, terminated, truncated, info))
+        log.append((obs, action, reward))
         obs = next_obs
         if render:
             env.render()
@@ -40,7 +41,7 @@ def set_random_seed(seed):
 
 
 def smooth(xs, win):
-    return np.convolve(xs, np.ones(win), 'valid') / win
+    return np.convolve(xs, np.ones(win), "valid") / win
 
 
 def get_env_dims(env):
@@ -48,3 +49,10 @@ def get_env_dims(env):
     discrete = type(env.action_space) == gym.spaces.Discrete
     n_act_dims = env.action_space.n if discrete else env.action_space.low.size
     return n_obs_dims, n_act_dims, discrete
+
+
+def featurize_actions(actions, n_act_dims, discrete):
+    if discrete:
+        actions = F.one_hot(actions.long(), num_classes=n_act_dims)
+        actions = actions.type(torch.float32)
+    return actions

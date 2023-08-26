@@ -27,7 +27,7 @@ class RandomAgent(Agent):
         return self.env.action_space.sample()
 
 
-class UDRLNeuralProcessAgent(Agent):
+class LearningAgent(Agent):
     def __init__(self, model, dataset, optimizer, train_freq=1, train_kwargs={}):
         self.model = model
         self.dataset = dataset
@@ -36,23 +36,9 @@ class UDRLNeuralProcessAgent(Agent):
         self.train_kwargs = train_kwargs
         self.traj = []
         self.training = False
-        self.embed()
-
-    def train(self):
-        self.training = True
-
-    def eval(self):
-        self.training = False
-
-    def embed(self):
-        batch = [self.dataset.obses, self.dataset.actions, self.dataset.returns]
-        batch = [torch.tensor(np.array(x)) for x in batch]
-        obses, actions, returns = self.optimizer.format_batch(batch)
-        emb = self.model.embed(obses, returns, actions)
-        self.emb = emb[None, :]
 
     def act(self, obs):
-        action = self.model(self.emb, torch.tensor(obs)[None, :].type(torch.float32))
+        action = self.eval_policy(obs)
         if self.model.discrete:
             distrn = torch.distributions.categorical.Categorical(logits=action)
             action = distrn.sample()
@@ -70,13 +56,62 @@ class UDRLNeuralProcessAgent(Agent):
             self.last_obs = None
             self.last_action = None
 
+    def train(self):
+        self.model.reset()
+        self.dataset.split()
+        self.optimizer.train(**self.train_kwargs)
+
     def reset(self):
-        if self.training:
-            if len(self.traj) > 0:
-                self.dataset.put(self.traj)
-                if len(self.dataset.trajs) % self.train_freq == 0:
-                    self.model.reset()
-                    self.dataset.split()
-                    self.optimizer.train(**self.train_kwargs)
-                    self.embed()
+        self.traj = []
+
+
+class UDRLNeuralProcessAgent(LearningAgent):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.embed()
+
+    def embed(self):
+        batch = [self.dataset.obses, self.dataset.actions, self.dataset.returns]
+        batch = [torch.tensor(np.array(x)) for x in batch]
+        obses, actions, returns = self.optimizer.format_batch(batch)
+        emb = self.model.embed(obses, returns, actions)
+        self.emb = emb[None, :]
+
+    def eval_policy(self, obs):
+        return self.model(self.emb, torch.tensor(obs)[None, :].type(torch.float32))
+
+    def reset(self):
+        if self.training and len(self.traj) > 0:
+            self.dataset.put(self.traj)
+            if self.dataset.num_trajs % self.train_freq == 0:
+                self.train()
+                self.embed()
+            self.traj = []
+
+
+class PVNAgent(LearningAgent):
+    def __init__(
+        self, *args, policy, policy_optimizer, policy_train_kwargs={}, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.policy = policy
+        self.policy_optimizer = policy_optimizer
+        self.policy_train_kwargs = policy_train_kwargs
+        self.trajs = []
+
+    def train(self):
+        super().train()
+        self.policy.reset()
+        self.policy_optimizer.train(**self.policy_train_kwargs)
+
+    def eval_policy(self, obs):
+        return self.policy(torch.tensor(obs)[None, :].type(torch.float32))
+
+    def reset(self):
+        if self.training and len(self.traj) > 0:
+            self.trajs.append(self.traj)
+            if len(self.trajs) == self.train_freq:
+                self.dataset.put(self.trajs)
+                self.train()
+                self.trajs = []
             self.traj = []
