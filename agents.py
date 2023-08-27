@@ -106,7 +106,8 @@ class PVNAgent(LearningAgent):
 
     def train(self):
         super().train()
-        self.policy.reset()
+        if not self.warm_start:
+            self.policy.reset()
         self.policy_optimizer.train(**self.policy_train_kwargs)
 
     def eval_policy(self, obs):
