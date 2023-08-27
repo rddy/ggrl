@@ -118,6 +118,6 @@ class PVNAgent(LearningAgent):
             self.trajs.append(self.traj)
             if len(self.trajs) == self.train_freq:
                 self.dataset.put(self.trajs)
-                self.train()
                 self.trajs = []
+                self.train()
             self.traj = []
