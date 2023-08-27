@@ -28,12 +28,15 @@ class RandomAgent(Agent):
 
 
 class LearningAgent(Agent):
-    def __init__(self, model, dataset, optimizer, train_freq=1, train_kwargs={}):
+    def __init__(
+        self, model, dataset, optimizer, train_freq=1, train_kwargs={}, warm_start=False
+    ):
         self.model = model
         self.dataset = dataset
         self.optimizer = optimizer
         self.train_freq = train_freq
         self.train_kwargs = train_kwargs
+        self.warm_start = warm_start
         self.traj = []
         self.training = False
 
@@ -57,7 +60,8 @@ class LearningAgent(Agent):
             self.last_action = None
 
     def train(self):
-        self.model.reset()
+        if not self.warm_start:
+            self.model.reset()
         self.dataset.split()
         self.optimizer.train(**self.train_kwargs)
 

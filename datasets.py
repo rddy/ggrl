@@ -21,15 +21,15 @@ class ExpDataset(Dataset):
         traj_idx = self.num_trajs
         n_prev_obses = self.num_exps
         n_new_obses = len(obses)
-        self.idxes_of_traj.append((n_prev_obses, n_prev_obses + n_new_obses))
+        idxes = (n_prev_obses, n_prev_obses + n_new_obses)
+        self.idxes_of_traj.append(idxes)
         if n_prev_obses == 0:
-            self.obses = np.array(obses)
-            self.actions = np.array(actions)
-            self.returns = np.array(returns)
+            update = lambda old, new: np.array(new)
         else:
-            self.obses = np.concatenate((self.obses, obses), axis=0)
-            self.actions = np.concatenate((self.actions, actions), axis=0)
-            self.returns = np.concatenate((self.returns, returns), axis=0)
+            update = lambda old, new: np.concatenate((old, new), axis=0)
+        self.obses = update(self.obses, obses)
+        self.actions = update(self.actions, actions)
+        self.returns = update(self.returns, returns)
 
     def put(self, traj):
         self.put_traj(traj)
