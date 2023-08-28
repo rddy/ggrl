@@ -12,6 +12,7 @@ class ExpDataset(Dataset):
         self.actions = []
         self.idxes_of_traj = []
         self.returns = []
+        self.traj_returns = []
 
     def put_traj(self, traj):
         traj_len = len(traj)
@@ -30,6 +31,7 @@ class ExpDataset(Dataset):
         self.obses = update(self.obses, obses)
         self.actions = update(self.actions, actions)
         self.returns = update(self.returns, returns)
+        self.traj_returns = update(self.traj_returns, [returns[0]])
 
     def put(self, traj):
         self.put_traj(traj)
@@ -76,10 +78,10 @@ class ExpDataset(Dataset):
             pickle.dump(self.data, f, pickle.HIGHEST_PROTOCOL)
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, *args, **kwargs):
         with open(path, "rb") as f:
             data = pickle.load(f)
-        dataset = cls()
+        dataset = cls(*args, **kwargs)
         for x in data:
             dataset.put(x)
         return dataset
@@ -110,7 +112,8 @@ class PolicyEvalDataset(ExpDataset):
             exp_idxes.extend(range(*exp_idxes_of_traj))
         returns = self.returns[rtn_idxes]
         rtn = np.mean(returns)
-        idxes = np.random.choice(exp_idxes, self.inner_batch_size)
+        replace = len(exp_idxes) < self.inner_batch_size
+        idxes = np.random.choice(exp_idxes, self.inner_batch_size, replace=replace)
         return self.obses[idxes], self.actions[idxes], rtn
 
     def __len__(self):

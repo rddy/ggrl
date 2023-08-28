@@ -70,13 +70,14 @@ class LearningAgent(Agent):
 
 
 class UDRLNeuralProcessAgent(LearningAgent):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, max_n_embs=1024, **kwargs):
         super().__init__(*args, **kwargs)
+        self.max_n_embs = max_n_embs
         self.embed()
 
     def embed(self):
         batch = [self.dataset.obses, self.dataset.actions, self.dataset.returns]
-        batch = [torch.tensor(np.array(x)) for x in batch]
+        batch = [torch.tensor(np.array(x[-self.max_n_embs :])) for x in batch]
         obses, actions, returns = self.optimizer.format_batch(batch)
         emb = self.model.embed(obses, returns, actions)
         self.emb = emb[None, :]
