@@ -35,13 +35,14 @@ class UDRLNeuralProcess(Module):
         super().__init__()
         self.n_act_dims = n_act_dims
         self.discrete = discrete
-        self.emb_layer = networks.build_mlp(
+        self.emb_layer = networks.mlp(
             n_in_dims=n_obs_dims + 1 + n_act_dims,
             n_out_dims=n_emb_dims,
             **emb_layer_kwargs
         )
-        self.pred_layer = networks.build_mlp(
-            n_in_dims=n_emb_dims + n_obs_dims,
+        self.pred_layer = networks.ConditionedMLP(
+            n_side_dims=n_emb_dims,
+            n_in_dims=n_obs_dims,
             n_out_dims=n_act_dims,
             **pred_layer_kwargs
         )
@@ -63,8 +64,7 @@ class UDRLNeuralProcess(Module):
         return pembs / denoms
 
     def forward(self, embs, obses):
-        cat = torch.cat([embs, obses], dim=1)
-        return self.pred_layer(cat)
+        return self.pred_layer(embs, obses)
 
 
 class PVN(Module):
@@ -81,13 +81,13 @@ class PVN(Module):
         super().__init__()
         self.n_act_dims = n_act_dims
         self.discrete = discrete
-        self.emb_layer = networks.build_mlp(
+        self.emb_layer = networks.mlp(
             n_in_dims=n_obs_dims + n_act_dims, n_out_dims=n_emb_dims, **emb_layer_kwargs
         )
-        self.pred_layer = networks.build_mlp(
+        self.pred_layer = networks.mlp(
             n_in_dims=n_emb_dims, n_out_dims=1, **pred_layer_kwargs
         )
-        self.recon_layer = networks.build_mlp(
+        self.recon_layer = networks.mlp(
             n_in_dims=n_emb_dims + n_obs_dims,
             n_out_dims=n_act_dims,
             **recon_layer_kwargs
@@ -109,7 +109,7 @@ class PVN(Module):
 class MLP(Module):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.mlp = networks.build_mlp(*args, **kwargs)
+        self.mlp = networks.mlp(*args, **kwargs)
 
     def forward(self, x):
         return self.mlp(x)
